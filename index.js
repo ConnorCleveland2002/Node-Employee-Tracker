@@ -6,7 +6,7 @@ const connection = mysql.createConnection({
     host: "localhost",
     port: 3306,
     user: "root",
-    password: "connorray798",
+    password: "password",
     database: "employees_db",
 });
 
@@ -55,60 +55,9 @@ function init() {
                     break;
                 };
 
-                case "Add employee": {
-                    connection.query(
-                        "SELECT * FROM roles", function (err, res) {
-                            inquirer.prompt([
-                                {
-                                    name: "first_name",
-                                    type: "input",
-                                    message: "Enter First Name:",
-                                },
-                                {
-                                    name: "last_name",
-                                    type: "input",
-                                    message: "Enter Last Name:",
-                                },
-                                {
-                                    name: "manager_id",
-                                    type: "input",
-                                    message: "Enter Manager:",
-                                },
-                                {
-                                    name: "role",
-                                    type: "list",
-                                    choices:
-                                        function () {
-                                            let roleArray = [];
-                                            for (let i = 0; i < res.length; i++) {
-                                                roleArray.push(res[i].title);
-                                            }
-                                            return roleArray;
-                                        },
-                                    message: "Enter role:",
-                                },
-                            ])
-                                .then(function (answer) {
-                                    let role_id;
-                                    for (let e = 0; e < res.length; e++) {
-                                        if (res[e].title == answer.role) {
-                                            role_id = res[e].id;
-                                        }
-                                    }
-                                    connection.query(
-                                        "INSERT INTO employees SET ?",
-                                        {
-                                            first_name: answer.first_name,
-                                            last_name: answer.last_name,
-                                            manager_id: answer.manager_id,
-                                            role_id: role_id,
-                                        },
-                                        init()
-                                    )
-                                })
-                        })
+                case "Add employee":
+                    newEmployee();
                     break;
-                };
 
                 case "Add department": {
                     inquirer.prompt([
@@ -136,31 +85,30 @@ function init() {
                     connection.query(
                         "SELECT * FROM departments",
                         function (err, res) {
-                            inquirer
-                                .prompt([
-                                    {
-                                        name: "new_role",
-                                        type: "input",
-                                        message: "Enter Role:",
+                            inquirer.prompt([
+                                {
+                                    name: "new_role",
+                                    type: "input",
+                                    message: "Enter Role:",
+                                },
+                                {
+                                    name: "salary",
+                                    type: "input",
+                                    message: "Enter Salary:",
+                                },
+                                {
+                                    name: "department",
+                                    type: "list",
+                                    choices: function () {
+                                        let deptArray = [];
+                                        for (let i = 0; i < res.length; i++) {
+                                            deptArray.push(res[i].name);
+                                        }
+                                        return deptArray;
                                     },
-                                    {
-                                        name: "salary",
-                                        type: "input",
-                                        message: "Enter Salary:",
-                                    },
-                                    {
-                                        name: "department",
-                                        type: "list",
-                                        choices: function () {
-                                            let deptArry = [];
-                                            for (let i = 0; i < res.length; i++) {
-                                                deptArry.push(res[i].name);
-                                            }
-                                            return deptArry;
-                                        },
-                                        message: "Enter Department:"
-                                    },
-                                ])
+                                    message: "Enter Department:"
+                                },
+                            ])
                                 .then(function (answer) {
                                     let department_id;
                                     for (let e = 0; e < res.length; e++) {
@@ -183,15 +131,99 @@ function init() {
                 };
 
                 case "Update employee role": {
-                    init();
+                    connection.query(
+                        "SELECT * FROM employees", function (err, res) {
+                            inquirer.prompt([{
+                                name: 'employee',
+                                type: 'list',
+                                message: 'Select Employee to Update:',
+                                choices: function () {
+                                    let updateArray = [];
+                                    for (let i = 0; i < res.length; i++) {
+                                        updateArray.push(res[i].first_name);
+                                    }
+                                    return updateArray;
+                                },
+                            },
+                            ]).then(function (answer) {
+                                let employeeU;
+                                for (let e = 0; e < res.length; e++) {
+                                    if (res[e].title == answer.employee) {
+                                        employeeU = res[e].id;
+                                    }
+                                }
+                                connection.query(
+                                    "DELETE FROM employees WHERE ?",
+                                    {
+                                        first_name: answer.employee
+                                    },
+                                )
+                                newEmployee()
+                            })
+                        })
                     break;
-                }
+                };
 
                 case "Exit": {
                     connection.end();
                 };
             }
         });
+};
+
+function newEmployee() {
+    connection.query(
+        "SELECT * FROM roles",
+        function (err, res) {
+            inquirer.prompt([
+                {
+                    name: "first_name",
+                    type: "input",
+                    message: "Enter First Name:",
+                },
+                {
+                    name: "last_name",
+                    type: "input",
+                    message: "Enter Last Name:",
+                },
+                {
+                    name: "manager_id",
+                    type: "input",
+                    message: "Enter Manager:",
+                },
+                {
+                    name: "role",
+                    type: "list",
+                    choices:
+                        function () {
+                            let roleArray = [];
+                            for (let i = 0; i < res.length; i++) {
+                                roleArray.push(res[i].title);
+                            }
+                            return roleArray;
+                        },
+                    message: "Enter role:",
+                },
+            ])
+                .then(function (answer) {
+                    let role_id;
+                    for (let e = 0; e < res.length; e++) {
+                        if (res[e].title == answer.role) {
+                            role_id = res[e].id;
+                        }
+                    }
+                    connection.query(
+                        "INSERT INTO employees SET ?",
+                        {
+                            first_name: answer.first_name,
+                            last_name: answer.last_name,
+                            manager_id: answer.manager_id,
+                            role_id: role_id,
+                        },
+                        init()
+                    )
+                })
+        })
 };
 
 init();
